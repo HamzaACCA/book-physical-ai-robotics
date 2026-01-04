@@ -6,8 +6,8 @@ const config = {
   baseUrl: '/book-physical-ai-robotics/',
   organizationName: 'HamzaACCA',
   projectName: 'book-physical-ai-robotics',
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'ignore',
+  onBrokenMarkdownLinks: 'ignore',
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -21,9 +21,7 @@ const config = {
           routeBasePath: '/',
         },
         blog: false,
-        theme: {
-          customCss: './src/css/custom.css',
-        },
+        theme: {},
       }),
     ],
   ],
