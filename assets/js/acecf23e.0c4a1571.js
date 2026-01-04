@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkphysical_ai_robotics=self.webpackChunkphysical_ai_robotics||[]).push([[1903],{1912(s){s.exports=JSON.parse('{"blogBasePath":"/blog","blogTitle":"Blog","authorsListPath":"/blog/authors"}')}}]);
