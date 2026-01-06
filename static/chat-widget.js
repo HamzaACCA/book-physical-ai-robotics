@@ -196,6 +196,15 @@
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
 
+            .system-message .message-content {
+                background: #fef3c7;
+                color: #92400e;
+                font-size: 12px;
+                font-style: italic;
+                text-align: center;
+                max-width: 100%;
+            }
+
             .message-sources {
                 margin-top: 8px;
                 padding: 8px 12px;
@@ -362,12 +371,21 @@
         if (typing) typing.remove();
     }
 
+    // Get selected text from page
+    function getSelectedText() {
+        const selection = window.getSelection();
+        return selection ? selection.toString().trim() : '';
+    }
+
     // Send message
     async function sendMessage(message) {
         if (!message.trim()) return;
 
         const input = document.getElementById('chat-input');
         const sendBtn = document.getElementById('chat-send');
+
+        // Check for selected text on page
+        const selectedText = getSelectedText();
 
         // Disable input
         input.disabled = true;
@@ -376,19 +394,31 @@
         // Add user message
         addMessage(message, 'user');
 
+        // Show selection indicator if text was selected
+        if (selectedText) {
+            addMessage(`[Analyzing selected text: "${selectedText.substring(0, 50)}..."]`, 'system');
+        }
+
         // Show typing
         showTyping();
 
         try {
+            const requestBody = {
+                message: message,
+                session_id: sessionId
+            };
+
+            // Include selected text if present
+            if (selectedText && selectedText.length > 0) {
+                requestBody.selected_text = selectedText;
+            }
+
             const response = await fetch(`${API_BASE_URL}/message`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    message: message,
-                    session_id: sessionId
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
