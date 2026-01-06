@@ -36,7 +36,7 @@ Every response MUST be backed by specific retrieved passages stored in the vecto
 **Rationale**: Enables users and administrators to verify response accuracy and trace information back to the original source. Critical for building confidence in the system and debugging response quality issues.
 
 ### IV. Accuracy and Retrieval Quality
-The RAG pipeline MUST implement semantic search using embeddings to ensure relevant passage retrieval. Chunking strategies MUST preserve context and meaning (no mid-sentence splits without overlap). Retrieved passages MUST be ranked by relevance, and the system MUST only use top-k results that meet a minimum similarity threshold.
+The RAG pipeline MUST implement semantic search using embeddings to ensure relevant passage retrieval. Chunking strategies MUST preserve context and meaning (no mid-sentence splits without overlap). Retrieved passages MUST be ranked by relevance, and the system MUST only use top-k results that meet a minimum similarity threshold (0.6 for Gemini text-embedding-004, adjusted from the original 0.7 to account for different similarity score distributions across embedding models).
 
 **Rationale**: High-quality retrieval is the foundation of accurate responses. Poor chunking or irrelevant retrievals directly degrade response quality and user experience.
 
@@ -137,6 +137,7 @@ Any violations of simplicity principles (YAGNI, minimal dependencies, smallest v
 - The `/sp.plan` command MUST include a "Constitution Check" section validating alignment
 - Architectural decisions MUST be documented in ADRs when they affect multiple principles
 
-**Version**: 1.1.0 | **Ratified**: 2026-01-03 | **Last Amended**: 2026-01-06
+**Version**: 1.2.0 | **Ratified**: 2026-01-03 | **Last Amended**: 2026-01-06
 **Amendment Notes**:
+- v1.2.0 (2026-01-06): Adjusted similarity threshold from 0.7 to 0.6 for Gemini text-embedding-004 to account for different similarity score distributions compared to OpenAI embeddings
 - v1.1.0 (2026-01-06): Updated technology stack to use Google Gemini instead of OpenAI for embeddings and LLM generation (free tier with similar capabilities)

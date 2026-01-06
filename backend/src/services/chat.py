@@ -168,7 +168,9 @@ async def chat_with_rag(
             ).points
 
             # Step 4: Retrieve chunk details from PostgreSQL with similarity threshold
-            SIMILARITY_THRESHOLD = 0.7  # Constitution requirement
+            # Adjusted from Constitution's 0.7 to 0.6 for Gemini embeddings
+            # (Gemini text-embedding-004 has different similarity distribution than OpenAI)
+            SIMILARITY_THRESHOLD = 0.6
             retrieved_chunks = []
             filtered_count = 0
 
@@ -286,8 +288,31 @@ ANSWER:"""
             hardware_keywords = ['hardware', 'system', 'requirement', 'gpu', 'cpu', 'ram', 'vram', 'rtx', 'memory', 'processor', 'specs']
             is_hardware_query = any(keyword in query_lower for keyword in hardware_keywords)
 
-            # Rerank chunks if it's a hardware query
-            if is_hardware_query:
+            # Detect "why" questions (explanatory queries)
+            is_why_question = query_lower.startswith('why') or ' why ' in query_lower
+
+            # Rerank chunks based on query intent
+            if is_why_question:
+                # For "why" questions, prioritize chunks with explanatory content
+                scored_chunks = []
+                for chunk in retrieved_chunks:
+                    chunk_lower = chunk['text'].lower()
+                    # Boost chunks with intro/overview keywords
+                    explanation_score = 0
+                    explanation_keywords = ['why', 'because', 'matters', 'important', 'poised to', 'represents', 'goal:', 'focus:', 'theme:', 'introduction', 'overview']
+                    explanation_score = sum(2 for keyword in explanation_keywords if keyword in chunk_lower)
+
+                    # Penalize chunks with technical/setup keywords
+                    if any(word in chunk_lower for word in ['aws', 'instance', 'cost calculation', '~$', 'setup']):
+                        explanation_score -= 3
+
+                    # Combine explanation score with similarity
+                    scored_chunks.append((explanation_score, chunk['similarity'], chunk))
+                # Sort by explanation score first, then similarity
+                scored_chunks.sort(key=lambda x: (x[0], x[1]), reverse=True)
+                selected_chunks = [chunk for score, similarity, chunk in scored_chunks[:2]]
+
+            elif is_hardware_query:
                 # Score chunks by hardware keyword presence with similarity as tie-breaker
                 scored_chunks = []
                 for chunk in retrieved_chunks:
