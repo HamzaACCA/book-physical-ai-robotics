@@ -25,6 +25,12 @@ const config = {
       }),
     ],
   ],
+  scripts: [
+    {
+      src: '/book-physical-ai-robotics/chat-widget.js',
+      async: true,
+    },
+  ],
   themeConfig: ({
     navbar: {
       title: 'Physical AI & Humanoid Robotics',
