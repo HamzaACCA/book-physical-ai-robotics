@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # API Configuration
     api_host: str = Field(default="0.0.0.0")
-    api_port: int = Field(default=8000)
+    api_port: int = Field(default=8000, validation_alias="PORT")  # Support Railway's PORT env var
     api_reload: bool = Field(default=False)
     api_workers: int = Field(default=1)
     api_cors_origins: List[str] = Field(default=["http://localhost:3000"])
