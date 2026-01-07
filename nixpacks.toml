@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["python312", "pipenv"]
+nixPkgs = ["python312"]
 
 [phases.install]
-cmds = ["pip install uv", "uv sync"]
+cmds = ["curl -LsSf https://astral.sh/uv/install.sh | sh", "uv sync"]
+
+[phases.build]
+cmds = ["echo 'No build step needed for Python backend'"]
 
 [start]
 cmd = "uv run python -m backend.src.api.main"
