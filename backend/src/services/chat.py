@@ -252,7 +252,7 @@ ANSWER:"""
 
         # Step 8: Generate response (skip if quota issues, return context only)
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel(settings.gemini_llm_model)
             response = model.generate_content(prompt)
             answer = response.text
 

@@ -208,3 +208,10 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Python 3.11+ + FastAPI, OpenAI SDK (Agents/ChatKit), Qdrant Client, psycopg3 (async), pydantic (001-rag-chatbot)
+- Qdrant Cloud (vector embeddings), Neon Serverless PostgreSQL (metadata, sessions) (001-rag-chatbot)
+
+## Recent Changes
+- 001-rag-chatbot: Added Python 3.11+ + FastAPI, OpenAI SDK (Agents/ChatKit), Qdrant Client, psycopg3 (async), pydantic
