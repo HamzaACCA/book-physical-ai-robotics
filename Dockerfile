@@ -15,11 +15,11 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml .
 COPY uv.lock* ./
 
+# Copy application code (needed for editable install)
+COPY backend/ backend/
+
 # Install Python dependencies with uv
 RUN uv sync --frozen || uv sync
-
-# Copy application code
-COPY backend/ backend/
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
