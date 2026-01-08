@@ -1,0 +1,595 @@
+openapi: 3.0.3
+info:
+  title: Integrated RAG Chatbot API
+  description: |
+    RESTful API for the Integrated RAG Chatbot system. Enables readers to query book content
+    conversationally with strict content fidelity and context control.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://api.example.com/api/v1
+    description: Production server
+
+tags:
+  - name: Query
+    description: Submit and manage user queries
+  - name: Session
+    description: Manage conversation sessions
+  - name: Health
+    description: Service health and readiness checks
+  - name: Admin
+    description: Administrative operations (ingestion, etc.)
+
+paths:
+  /query:
+    post:
+      tags:
+        - Query
+      summary: Submit a question about the full book
+      description: |
+        Submit a natural-language question about any content in the book.
+        The system retrieves relevant passages and generates a grounded response.
+      operationId: submitQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Successful query response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          description: Invalid request (empty query, invalid session, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /query/selected:
+    post:
+      tags:
+        - Query
+      summary: Submit a question about selected text only
+      description: |
+        Submit a question restricted to user-selected text. The system retrieves
+        passages only from within the selection boundaries.
+      operationId: submitQueryWithSelection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryWithSelectionRequest'
+      responses:
+        '200':
+          description: Successful query response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          description: Invalid request (empty query/selection, invalid offsets, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /session/{session_id}:
+    get:
+      tags:
+        - Session
+      summary: Retrieve session conversation history
+      description: Get the conversation history and metadata for an active session
+      operationId: getSession
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session identifier
+      responses:
+        '200':
+          description: Session data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '404':
+          description: Session not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Session
+      summary: End a session
+      description: Manually close and delete a session before expiration
+      operationId: deleteSession
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session identifier
+      responses:
+        '204':
+          description: Session deleted successfully
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the service is running and healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy (database/vector DB unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /admin/ingest:
+    post:
+      tags:
+        - Admin
+      summary: Trigger book content ingestion
+      description: |
+        Administrative endpoint to ingest and index a new book.
+        Requires admin authentication.
+      operationId: ingestBook
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionRequest'
+      responses:
+        '202':
+          description: Ingestion job accepted (async processing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResponse'
+        '400':
+          description: Invalid request (missing file, invalid format, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized (missing or invalid API key)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Admin API key for ingestion operations
+
+  schemas:
+    QueryRequest:
+      type: object
+      required:
+        - query_text
+      properties:
+        query_text:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: User's natural-language question
+          example: "What does the author say about machine learning?"
+        session_id:
+          type: string
+          format: uuid
+          description: Session ID for conversation continuity. If omitted, a new session is created.
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        user_id:
+          type: string
+          maxLength: 255
+          description: Optional user identifier from book platform
+          example: "reader_12345"
+
+    QueryWithSelectionRequest:
+      type: object
+      required:
+        - query_text
+        - selection
+      properties:
+        query_text:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: User's question about the selected text
+          example: "What does this paragraph mean?"
+        selection:
+          $ref: '#/components/schemas/TextSelection'
+        session_id:
+          type: string
+          format: uuid
+          description: Session ID for conversation continuity
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        user_id:
+          type: string
+          maxLength: 255
+          description: Optional user identifier
+          example: "reader_12345"
+
+    TextSelection:
+      type: object
+      required:
+        - selected_text
+        - start_char_offset
+        - end_char_offset
+      properties:
+        selected_text:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: Actual text content selected by the user
+          example: "Machine learning is a subset of artificial intelligence..."
+        start_char_offset:
+          type: integer
+          minimum: 0
+          description: Character offset from the beginning of the book
+          example: 15000
+        end_char_offset:
+          type: integer
+          minimum: 1
+          description: Character offset from the beginning of the book (exclusive)
+          example: 18500
+        chapter_id:
+          type: string
+          description: Optional chapter identifier
+          example: "chapter-04"
+        page_range_start:
+          type: integer
+          minimum: 1
+          description: Starting page number
+          example: 52
+        page_range_end:
+          type: integer
+          minimum: 1
+          description: Ending page number
+          example: 58
+
+    QueryResponse:
+      type: object
+      required:
+        - response_id
+        - query_id
+        - session_id
+        - response_text
+        - citations
+        - retrieval_quality
+      properties:
+        response_id:
+          type: string
+          format: uuid
+          description: Unique response identifier
+          example: "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
+        query_id:
+          type: string
+          format: uuid
+          description: Associated query identifier
+          example: "a3bb189e-8bf9-3888-9912-ace4e6543002"
+        session_id:
+          type: string
+          format: uuid
+          description: Session identifier
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        response_text:
+          type: string
+          description: Generated answer text with inline citations
+          example: "According to Chapter 4 [Source 1], the author defines machine learning as..."
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+          description: Source citations for response
+        retrieval_quality:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Highest similarity score from retrieved passages
+          example: 0.87
+        latency_ms:
+          type: integer
+          minimum: 0
+          description: Total response time in milliseconds
+          example: 2340
+
+    Citation:
+      type: object
+      required:
+        - chunk_id
+        - reference
+        - text_preview
+      properties:
+        chunk_id:
+          type: string
+          format: uuid
+          description: ID of the cited chunk
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        reference:
+          type: string
+          description: Citation marker in response text
+          example: "[Source 1]"
+        chapter_title:
+          type: string
+          description: Human-readable chapter title
+          example: "Machine Learning Fundamentals"
+        section_title:
+          type: string
+          description: Section title
+          example: "Supervised Learning"
+        page_number:
+          type: integer
+          minimum: 1
+          description: Page number where the cited content appears
+          example: 52
+        text_preview:
+          type: string
+          maxLength: 200
+          description: Short preview of the cited text
+          example: "Machine learning is a subset of artificial intelligence that enables..."
+
+    SessionResponse:
+      type: object
+      required:
+        - session_id
+        - messages
+        - created_at
+        - updated_at
+        - expires_at
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          description: Session identifier
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        user_id:
+          type: string
+          description: Optional user identifier
+          example: "reader_12345"
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          description: Conversation history (last 10 messages)
+          maxItems: 10
+        active_retrieval_mode:
+          type: string
+          enum: [FULL_BOOK, SELECTED_TEXT]
+          description: Current retrieval mode
+          example: FULL_BOOK
+        created_at:
+          type: string
+          format: date-time
+          description: Session creation timestamp
+          example: "2026-01-03T14:15:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+          example: "2026-01-03T14:22:18Z"
+        expires_at:
+          type: string
+          format: date-time
+          description: Session expiration timestamp (30 min from last activity)
+          example: "2026-01-03T14:52:18Z"
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+        - timestamp
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+          description: Message sender role
+          example: user
+        content:
+          type: string
+          description: Message text
+          example: "What does the author say about overfitting?"
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp
+          example: "2026-01-03T14:22:15Z"
+        citations:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Chunk IDs cited (assistant messages only)
+          example: ["550e8400-e29b-41d4-a716-446655440000"]
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Overall service health status
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+          example: "2026-01-03T14:30:00Z"
+        details:
+          type: object
+          description: Component-level health details
+          properties:
+            database:
+              type: string
+              enum: [up, down]
+              example: up
+            vector_db:
+              type: string
+              enum: [up, down]
+              example: up
+            llm_service:
+              type: string
+              enum: [up, down]
+              example: up
+
+    IngestionRequest:
+      type: object
+      required:
+        - book_file_url
+        - book_id
+        - book_title
+      properties:
+        book_file_url:
+          type: string
+          format: uri
+          description: URL to the book file (PDF, EPUB, TXT)
+          example: "https://storage.example.com/books/ml-fundamentals.pdf"
+        book_id:
+          type: string
+          format: uuid
+          description: Unique book identifier
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        book_title:
+          type: string
+          maxLength: 500
+          description: Book title
+          example: "Machine Learning Fundamentals"
+        metadata:
+          type: object
+          description: Optional book metadata (author, publication date, etc.)
+          additionalProperties: true
+
+    IngestionResponse:
+      type: object
+      required:
+        - job_id
+        - status
+        - message
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          description: Ingestion job identifier for tracking
+          example: "c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8"
+        status:
+          type: string
+          enum: [accepted, processing]
+          description: Job status
+          example: accepted
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Book ingestion job accepted. Processing will begin shortly."
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "INVALID_REQUEST"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Query text cannot be empty"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2026-01-03T14:25:00Z"
+        details:
+          type: object
+          description: Additional error context
+          additionalProperties: true
