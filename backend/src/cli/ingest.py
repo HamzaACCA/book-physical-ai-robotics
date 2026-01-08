@@ -28,14 +28,23 @@ async def ingest_book(
     chunk_size: int = 800,
     overlap: int = 128,
 ) -> None:
-    """Ingest a book into the RAG system.
+    """Ingest a book into the RAG system with metadata extraction.
+
+    Supports plain text and markdown files. Markdown headers (# H1, ## H2) are
+    automatically extracted to provide chapter and section metadata for enhanced
+    source attribution in chat responses.
 
     Args:
-        file_path: Path to the book text file
+        file_path: Path to book file (txt or md). Markdown headers recommended.
         book_id: Unique identifier for the book
         book_title: Title of the book
         chunk_size: Target chunk size in tokens
         overlap: Overlap between chunks in tokens
+
+    Markdown Structure:
+        - H1 headers (#) → Chapters (e.g., "# Chapter 1: Introduction")
+        - H2 headers (##) → Sections (e.g., "## Background")
+        - Files without headers are treated as single-chapter content
     """
     logger.info(f"Starting ingestion for book: {book_title} (ID: {book_id})")
 

@@ -20,24 +20,172 @@ logger = get_logger(__name__)
 genai.configure(api_key=settings.gemini_api_key)
 
 
+def extract_markdown_structure(content: str) -> dict[str, Any]:
+    """Parse markdown headers to extract document structure.
+
+    Args:
+        content: Full markdown content
+
+    Returns:
+        Dictionary with chapters and sections hierarchy:
+        {
+            'chapters': [
+                {
+                    'id': 'chapter-01',
+                    'title': 'Introduction',
+                    'start_offset': 0,
+                    'end_offset': 1500,
+                    'level': 1,  # H1
+                    'sections': [
+                        {
+                            'id': 'section-01-01',
+                            'title': 'Background',
+                            'start_offset': 150,
+                            'end_offset': 800,
+                            'level': 2  # H2
+                        }
+                    ]
+                }
+            ]
+        }
+    """
+    logger.info("Extracting markdown structure")
+
+    # Regex to match markdown headers: # Title, ## Title, etc.
+    header_pattern = re.compile(r'^(#+)\s+(.+)$', re.MULTILINE)
+
+    chapters = []
+    current_chapter = None
+    chapter_counter = 0
+    section_counter = 0
+
+    # Find all headers with their positions
+    for match in header_pattern.finditer(content):
+        level = len(match.group(1))  # Number of # symbols
+        title = match.group(2).strip()
+        start_offset = match.start()
+
+        if level == 1:  # H1 = Chapter
+            # Close previous chapter
+            if current_chapter:
+                current_chapter['end_offset'] = start_offset
+                chapters.append(current_chapter)
+
+            # Start new chapter
+            chapter_counter += 1
+            section_counter = 0  # Reset section counter for new chapter
+            current_chapter = {
+                'id': f'chapter-{chapter_counter:02d}',
+                'title': title,
+                'start_offset': start_offset,
+                'end_offset': len(content),  # Will be updated
+                'level': 1,
+                'sections': []
+            }
+
+        elif level == 2 and current_chapter:  # H2 = Section (only if in a chapter)
+            # Close previous section if exists
+            if current_chapter['sections']:
+                current_chapter['sections'][-1]['end_offset'] = start_offset
+
+            # Add new section
+            section_counter += 1
+            current_chapter['sections'].append({
+                'id': f'section-{chapter_counter:02d}-{section_counter:02d}',
+                'title': title,
+                'start_offset': start_offset,
+                'end_offset': current_chapter['end_offset'],  # Will be updated
+                'level': 2
+            })
+
+    # Close final chapter
+    if current_chapter:
+        current_chapter['end_offset'] = len(content)
+        chapters.append(current_chapter)
+
+    # If no chapters found, create a default one
+    if not chapters:
+        logger.info("No markdown headers found, treating as single chapter")
+        chapters = [{
+            'id': 'chapter-01',
+            'title': 'Content',
+            'start_offset': 0,
+            'end_offset': len(content),
+            'level': 1,
+            'sections': []
+        }]
+
+    logger.info(f"Extracted {len(chapters)} chapters with {sum(len(ch['sections']) for ch in chapters)} sections")
+    return {'chapters': chapters}
+
+
+def find_chunk_metadata(
+    start_offset: int,
+    end_offset: int,
+    structure: dict[str, Any]
+) -> dict[str, Any]:
+    """Find which chapter/section a chunk belongs to based on char offsets.
+
+    Args:
+        start_offset: Chunk start character position
+        end_offset: Chunk end character position
+        structure: Document structure from extract_markdown_structure()
+
+    Returns:
+        Dictionary with chapter_id, chapter_title, section_id, section_title, hierarchy
+    """
+    metadata = {
+        'chapter_id': None,
+        'chapter_title': None,
+        'section_id': None,
+        'section_title': None,
+        'hierarchy': []
+    }
+
+    # Use chunk's midpoint for classification
+    chunk_midpoint = (start_offset + end_offset) // 2
+
+    # Find which chapter contains this chunk
+    for chapter in structure.get('chapters', []):
+        if chapter['start_offset'] <= chunk_midpoint < chapter['end_offset']:
+            metadata['chapter_id'] = chapter['id']
+            metadata['chapter_title'] = chapter['title']
+            metadata['hierarchy'] = [chapter['title']]
+
+            # Find which section within this chapter
+            for section in chapter.get('sections', []):
+                if section['start_offset'] <= chunk_midpoint < section['end_offset']:
+                    metadata['section_id'] = section['id']
+                    metadata['section_title'] = section['title']
+                    metadata['hierarchy'].append(section['title'])
+                    break
+
+            break
+
+    return metadata
+
+
 def chunk_book_content(
     book_content: str,
     book_id: UUID,
     target_tokens: int = 800,
     overlap_tokens: int = 128,
 ) -> list[dict[str, Any]]:
-    """Chunk book content preserving paragraph boundaries.
+    """Chunk book content preserving paragraph boundaries with metadata extraction.
 
     Args:
-        book_content: Full text of the book
+        book_content: Full text of the book (supports plain text and markdown)
         book_id: Unique identifier for the book
         target_tokens: Target chunk size in tokens (default 800)
         overlap_tokens: Overlap between chunks in tokens (default 128)
 
     Returns:
-        List of chunk dictionaries with text and metadata
+        List of chunk dictionaries with text, offsets, and chapter/section metadata
     """
     logger.info(f"Starting chunking for book {book_id}")
+
+    # Extract markdown structure for metadata
+    structure = extract_markdown_structure(book_content)
 
     # Simple word-based approximation: ~0.75 tokens per word
     words_per_token = 0.75
@@ -96,7 +244,16 @@ def chunk_book_content(
             }
         )
 
-    logger.info(f"Created {len(chunks)} chunks for book {book_id}")
+    # Add chapter/section metadata to each chunk
+    for chunk in chunks:
+        metadata = find_chunk_metadata(
+            chunk["start_char_offset"],
+            chunk["end_char_offset"],
+            structure
+        )
+        chunk.update(metadata)
+
+    logger.info(f"Created {len(chunks)} chunks with metadata for book {book_id}")
     return chunks
 
 

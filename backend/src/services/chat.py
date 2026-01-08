@@ -119,6 +119,115 @@ async def save_message(
             await conn.commit()
 
 
+def extract_topics_from_chunks(chunks: list[dict]) -> list[str]:
+    """Extract key topics from retrieved chunks.
+
+    Args:
+        chunks: List of retrieved chunk dictionaries
+
+    Returns:
+        List of topic keywords
+    """
+    topics = set()
+    for chunk in chunks:
+        # Extract capitalized words as potential topics
+        words = chunk.get('text', '').split()
+        for word in words:
+            clean_word = word.strip('.,!?;:')
+            if len(clean_word) > 3 and (clean_word[0].isupper() or clean_word.isupper()):
+                topics.add(clean_word)
+
+    # Return top 10 topics
+    return list(topics)[:10]
+
+
+def generate_follow_up_questions(
+    query: str,
+    retrieved_chunks: list[dict],
+    answer: str
+) -> list[str]:
+    """Generate 3 follow-up questions using Gemini.
+
+    Args:
+        query: Original user question
+        retrieved_chunks: Retrieved context chunks
+        answer: Generated answer
+
+    Returns:
+        List of up to 3 follow-up question strings
+    """
+    try:
+        # Extract topics from chunks
+        topics = extract_topics_from_chunks(retrieved_chunks)
+
+        prompt = f"""Based on this Q&A about a book on Physical AI & Humanoid Robotics, suggest 3 relevant follow-up questions the reader might ask next.
+
+USER QUESTION: {query}
+ANSWER GIVEN: {answer[:200]}...
+TOPICS IN CONTEXT: {', '.join(topics) if topics else 'general robotics content'}
+
+Generate 3 concise follow-up questions (one per line) that:
+- Explore related concepts from the context
+- Dive deeper into mentioned topics
+- Help the reader learn more
+
+FOLLOW-UP QUESTIONS:"""
+
+        model = genai.GenerativeModel(settings.gemini_llm_model)
+        response = model.generate_content(prompt)
+
+        # Parse response into list (one question per line)
+        questions = [q.strip() for q in response.text.split('\n') if q.strip() and '?' in q]
+        return questions[:3]  # Max 3
+
+    except Exception as e:
+        logger.warning(f"Failed to generate follow-up questions: {e}")
+        return []
+
+
+def suggest_query_refinements(
+    query: str,
+    retrieved_chunks: list[dict],
+    avg_similarity: float
+) -> list[str]:
+    """Suggest refined queries when similarity is low (<0.65).
+
+    Args:
+        query: Original user question
+        retrieved_chunks: Retrieved context chunks
+        avg_similarity: Average similarity score
+
+    Returns:
+        List of suggested refined queries (max 3)
+    """
+    if avg_similarity >= 0.65 or not retrieved_chunks:
+        return []  # Good results or no chunks, no need for suggestions
+
+    try:
+        # Extract keywords from chunks
+        keywords = extract_topics_from_chunks(retrieved_chunks)
+
+        prompt = f"""The user asked: "{query}"
+
+But the search found limited relevant content (similarity: {avg_similarity:.2f}).
+
+These topics are available in the book: {', '.join(keywords) if keywords else 'various robotics topics'}
+
+Suggest 3 alternative phrasings or related questions that might get better results from the book content.
+
+SUGGESTED QUERIES:"""
+
+        model = genai.GenerativeModel(settings.gemini_llm_model)
+        response = model.generate_content(prompt)
+
+        suggestions = [s.strip() for s in response.text.split('\n') if s.strip() and len(s.strip()) > 10]
+        return suggestions[:3]
+
+    except Exception as e:
+        logger.warning(f"Failed to generate query suggestions: {e}")
+        return []
+
+
 async def chat_with_rag(
     query: str,
     session_id: UUID,
@@ -187,22 +296,39 @@ async def chat_with_rag(
                             continue
 
                         await cur.execute(
-                            "SELECT text_content FROM book_chunks WHERE chunk_id = %s",
+                            """SELECT
+                                text_content,
+                                chapter_title,
+                                section_title,
+                                chunk_id
+                            FROM book_chunks
+                            WHERE chunk_id = %s""",
                             (chunk_id,)
                         )
                         row = await cur.fetchone()
 
                         if row:
                             retrieved_chunks.append({
+                                "chunk_id": str(chunk_id),
                                 "text": row[0],
+                                "chapter_title": row[1],
+                                "section_title": row[2],
                                 "similarity": similarity
                             })
 
             # Log retrieval quality metrics
             logger.info(f"Retrieved {len(retrieved_chunks)} chunks (filtered {filtered_count} below threshold {SIMILARITY_THRESHOLD})")
+            suggestions = []
+            avg_similarity = 0.0
             if retrieved_chunks:
                 avg_similarity = sum(c['similarity'] for c in retrieved_chunks) / len(retrieved_chunks)
                 logger.info(f"Average similarity: {avg_similarity:.3f}, Top similarity: {retrieved_chunks[0]['similarity']:.3f}")
+
+                # Generate query suggestions if similarity is low
+                if avg_similarity < 0.65:
+                    suggestions = suggest_query_refinements(query, retrieved_chunks, avg_similarity)
+                    if suggestions:
+                        logger.info(f"Generated {len(suggestions)} query suggestions due to low similarity")
             else:
                 # No chunks met the similarity threshold
                 logger.warning(f"No chunks met similarity threshold {SIMILARITY_THRESHOLD} for query: {query}")
@@ -278,6 +404,11 @@ ANSWER:"""
             if hallucination_score < 0.1 and len(answer_words) > 5:
                 logger.warning(f"Low hallucination score ({hallucination_score:.2f}), response may not be well-grounded in context")
                 answer += "\n\n[Note: This response may not be fully based on the book content. Please verify.]"
+
+            # Generate follow-up questions
+            follow_ups = generate_follow_up_questions(query, retrieved_chunks, answer)
+            if follow_ups:
+                logger.info(f"Generated {len(follow_ups)} follow-up questions")
 
         except Exception as e:
             logger.warning(f"LLM generation failed: {e}")
@@ -380,20 +511,29 @@ ANSWER:"""
 
             answer += "\n\n[Note: AI response generation temporarily limited. Full conversational responses will be available when API quota resets.]"
 
+            # Generate follow-ups for fallback case too
+            follow_ups = []  # No follow-ups in fallback mode
+
         # Step 9: Save assistant response
         await save_message(session_id, "assistant", answer, db_pool)
 
-        # Step 10: Return response with sources
+        # Step 10: Return response with enhanced sources and new features
         return {
             "answer": answer,
             "sources": [
                 {
+                    "chunk_id": c.get("chunk_id"),
                     "text": c["text"][:200] + "...",
-                    "similarity": c["similarity"]
+                    "similarity": c["similarity"],
+                    "chapter_title": c.get("chapter_title"),
+                    "section_title": c.get("section_title")
                 }
                 for c in retrieved_chunks
             ],
-            "session_id": str(session_id)
+            "session_id": str(session_id),
+            "follow_up_questions": follow_ups if 'follow_ups' in locals() else [],
+            "query_suggestions": suggestions if suggestions else [],
+            "retrieval_quality": avg_similarity
         }
 
     except Exception as e:
