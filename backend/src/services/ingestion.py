@@ -278,7 +278,7 @@ def generate_embeddings_openai(texts: list[str]) -> list[list[float]]:
 
 
 async def generate_embeddings(
-    texts: list[str], openai_client: AsyncOpenAI = None
+    texts: list[str], openai_client = None
 ) -> list[list[float]]:
     """Generate embeddings using OpenAI (wrapper for compatibility).
 
