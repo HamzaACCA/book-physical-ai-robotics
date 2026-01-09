@@ -369,10 +369,14 @@ USER QUESTION: {query}
 
 INSTRUCTIONS:
 - Answer based on the context provided
-- Reference specific information from the context
+- DO NOT start with "Based on the book content:" or similar phrases
+- Write in a well-structured format with proper paragraphs
+- Start each new idea or topic on a new line (use line breaks)
+- Use proper punctuation and full stops at the end of sentences
 - Be conversational and remember previous messages
+- Reference specific information naturally within the answer
 - If the context doesn't have enough information, say so
-- Keep answers concise (2-3 paragraphs max)
+- Keep answers concise but well-formatted (2-4 paragraphs max)
 
 ANSWER:"""
 
@@ -477,7 +481,7 @@ ANSWER:"""
             # For hardware queries, try to extract and format key specs
             if is_hardware_query and any(keyword in combined_text.lower() for keyword in ['gpu', 'cpu', 'ram']):
                 # Extract key hardware info and format nicely
-                formatted_answer = "Here are the hardware requirements:\n\n"
+                formatted_answer = "The hardware requirements for this course include:\n\n"
 
                 # Look for GPU info
                 gpu_match = re.search(r'(RTX.*?\d+.*?VRAM\))', combined_text, re.IGNORECASE)
@@ -501,13 +505,16 @@ ANSWER:"""
 
                 # Add context if found
                 if 'high vram' in combined_text.lower():
-                    formatted_answer += "\nWhy these specs? High VRAM is needed for robot and environment assets, RTX GPU for realistic rendering.\n"
+                    formatted_answer += "\nThese specifications are important because high VRAM is needed for robot and environment assets, and RTX GPU enables realistic rendering.\n"
 
                 answer = formatted_answer
             else:
                 # Limit to reasonable length for non-hardware queries
+                # Format with proper paragraphs
                 combined_text = combined_text[:800].rsplit(' ', 1)[0]
-                answer = f"Based on the book content:\n\n{combined_text}"
+                # Remove line breaks and clean up
+                combined_text = ' '.join(combined_text.split())
+                answer = combined_text
 
             answer += "\n\n[Note: AI response generation temporarily limited. Full conversational responses will be available when API quota resets.]"
 
