@@ -1,20 +1,91 @@
-# Dependencies
+# Frontend - Node.js/Docusaurus
 /node_modules
-
-# Production
 /build
-
-# Generated files
 .docusaurus
 .cache-loader
 
-# Misc
-.DS_Store
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+
+# Environment variables
+.env
 .env.local
+.env.*.local
+*.env
 .env.development.local
 .env.test.local
 .env.production.local
 
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Book data (sensitive content)
+backend/data/books/*.pdf
+backend/data/books/*.txt
+backend/data/books/*.epub
+
+# Docker
+docker-compose.override.yml
+
+# Deployment configs with secrets
+vercel.json
+render.yaml
+
+# Temporary files
+*.tmp
+*.temp
+*.bak

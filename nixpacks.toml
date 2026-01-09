@@ -1,0 +1,14 @@
+[providers]
+python = "3.12"
+
+[phases.setup]
+nixPkgs = ["python312"]
+
+[phases.install]
+cmds = ["pip install uv", "uv sync"]
+
+[phases.build]
+cmds = ["echo 'Python backend - no build needed'"]
+
+[start]
+cmd = "uv run python -m backend.src.api.main"
