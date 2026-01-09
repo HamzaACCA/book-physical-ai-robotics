@@ -5,18 +5,33 @@ import re
 from typing import Optional
 from uuid import UUID, uuid4
 
-import google.generativeai as genai
+from openai import OpenAI
 from psycopg_pool import AsyncConnectionPool
 
 from backend.src.core.config import settings
 from backend.src.core.logging import get_logger
 from backend.src.db.qdrant import get_qdrant_client
-from backend.src.services.ingestion import generate_embeddings_gemini
 
 logger = get_logger(__name__)
 
-# Configure Gemini
-genai.configure(api_key=settings.gemini_api_key)
+# Configure OpenAI
+openai_client = OpenAI(api_key=settings.openai_api_key)
+
+
+def generate_embeddings_openai(texts: list[str]) -> list[list[float]]:
+    """Generate embeddings using OpenAI.
+
+    Args:
+        texts: List of texts to embed
+
+    Returns:
+        List of embedding vectors
+    """
+    response = openai_client.embeddings.create(
+        model=settings.openai_embedding_model,
+        input=texts
+    )
+    return [item.embedding for item in response.data]
 
 
 async def create_chat_session(db_pool: AsyncConnectionPool) -> UUID:
@@ -173,11 +188,15 @@ Generate 3 concise follow-up questions (one per line) that:
 
 FOLLOW-UP QUESTIONS:"""
 
-        model = genai.GenerativeModel(settings.gemini_llm_model)
-        response = model.generate_content(prompt)
+        response = openai_client.chat.completions.create(
+            model=settings.openai_llm_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=settings.openai_temperature,
+            max_tokens=200
+        )
 
         # Parse response into list (one question per line)
-        questions = [q.strip() for q in response.text.split('\n') if q.strip() and '?' in q]
+        questions = [q.strip() for q in response.choices[0].message.content.split('\n') if q.strip() and '?' in q]
         return questions[:3]  # Max 3
 
     except Exception as e:
@@ -217,10 +236,14 @@ Suggest 3 alternative phrasings or related questions that might get better resul
 
 SUGGESTED QUERIES:"""
 
-        model = genai.GenerativeModel(settings.gemini_llm_model)
-        response = model.generate_content(prompt)
+        response = openai_client.chat.completions.create(
+            model=settings.openai_llm_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=settings.openai_temperature,
+            max_tokens=150
+        )
 
-        suggestions = [s.strip() for s in response.text.split('\n') if s.strip() and len(s.strip()) > 10]
+        suggestions = [s.strip() for s in response.choices[0].message.content.split('\n') if s.strip() and len(s.strip()) > 10]
         return suggestions[:3]
 
     except Exception as e:
@@ -266,7 +289,7 @@ async def chat_with_rag(
             logger.info("Using full book retrieval mode")
 
             # Generate query embedding
-            query_embedding = generate_embeddings_gemini([query])[0]
+            query_embedding = generate_embeddings_openai([query])[0]
 
             # Search Qdrant for similar chunks
             qdrant_client = get_qdrant_client()
@@ -380,11 +403,15 @@ INSTRUCTIONS:
 
 ANSWER:"""
 
-        # Step 8: Generate response (skip if quota issues, return context only)
+        # Step 8: Generate response with OpenAI
         try:
-            model = genai.GenerativeModel(settings.gemini_llm_model)
-            response = model.generate_content(prompt)
-            answer = response.text
+            response = openai_client.chat.completions.create(
+                model=settings.openai_llm_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=settings.openai_temperature,
+                max_tokens=800
+            )
+            answer = response.choices[0].message.content
 
             # Validate response against hallucination
             # Extract key terms from retrieved chunks (nouns, technical terms)

@@ -10,23 +10,23 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # Google Gemini Configuration
-    gemini_api_key: str = Field(..., description="Google Gemini API key")
+    # OpenAI Configuration (Primary)
+    openai_api_key: str = Field(..., description="OpenAI API key")
+    openai_embedding_model: str = Field(default="text-embedding-3-small")
+    openai_llm_model: str = Field(default="gpt-4o-mini")
+    openai_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
+
+    # Google Gemini Configuration (Fallback)
+    gemini_api_key: str = Field(default="", description="Google Gemini API key")
     gemini_embedding_model: str = Field(default="models/text-embedding-004")
     gemini_llm_model: str = Field(default="gemini-2.0-flash-exp")
     gemini_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
-
-    # OpenAI Configuration (legacy, optional)
-    openai_api_key: str = Field(default="", description="OpenAI API key")
-    openai_embedding_model: str = Field(default="text-embedding-3-small")
-    openai_llm_model: str = Field(default="gpt-4-turbo")
-    openai_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
 
     # Qdrant Configuration
     qdrant_url: str = Field(..., description="Qdrant cluster URL")
     qdrant_api_key: str = Field(..., description="Qdrant API key")
     qdrant_collection_name: str = Field(default="book_chunks")
-    qdrant_vector_size: int = Field(default=1536)
+    qdrant_vector_size: int = Field(default=1536)  # OpenAI text-embedding-3-small dimensions
 
     # PostgreSQL Configuration
     database_url: str = Field(..., description="PostgreSQL connection URL")

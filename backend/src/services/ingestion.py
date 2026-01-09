@@ -4,8 +4,7 @@ import re
 from typing import Any
 from uuid import UUID
 
-import google.generativeai as genai
-from openai import AsyncOpenAI
+from openai import OpenAI
 from psycopg_pool import AsyncConnectionPool
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
@@ -16,8 +15,8 @@ from backend.src.models.vector import create_chunk_payload
 
 logger = get_logger(__name__)
 
-# Configure Gemini
-genai.configure(api_key=settings.gemini_api_key)
+# Configure OpenAI
+openai_client = OpenAI(api_key=settings.openai_api_key)
 
 
 def extract_markdown_structure(content: str) -> dict[str, Any]:
@@ -257,26 +256,23 @@ def chunk_book_content(
     return chunks
 
 
-def generate_embeddings_gemini(texts: list[str]) -> list[list[float]]:
-    """Generate embeddings using Google Gemini text-embedding-004.
+def generate_embeddings_openai(texts: list[str]) -> list[list[float]]:
+    """Generate embeddings using OpenAI.
 
     Args:
         texts: List of text strings to embed
 
     Returns:
-        List of embedding vectors (768 dimensions each)
+        List of embedding vectors (1536 dimensions for text-embedding-3-small)
     """
-    logger.info(f"Generating embeddings for {len(texts)} texts using Gemini")
+    logger.info(f"Generating embeddings for {len(texts)} texts using OpenAI")
 
-    embeddings = []
-    for text in texts:
-        result = genai.embed_content(
-            model=settings.gemini_embedding_model,
-            content=text,
-            task_type="retrieval_document"
-        )
-        embeddings.append(result['embedding'])
+    response = openai_client.embeddings.create(
+        model=settings.openai_embedding_model,
+        input=texts
+    )
 
+    embeddings = [item.embedding for item in response.data]
     logger.info(f"Generated {len(embeddings)} embeddings")
     return embeddings
 
@@ -284,16 +280,16 @@ def generate_embeddings_gemini(texts: list[str]) -> list[list[float]]:
 async def generate_embeddings(
     texts: list[str], openai_client: AsyncOpenAI = None
 ) -> list[list[float]]:
-    """Generate embeddings using Google Gemini (wrapper for compatibility).
+    """Generate embeddings using OpenAI (wrapper for compatibility).
 
     Args:
         texts: List of text strings to embed
         openai_client: Unused, kept for compatibility
 
     Returns:
-        List of embedding vectors (768 dimensions each)
+        List of embedding vectors (1536 dimensions for text-embedding-3-small)
     """
-    return generate_embeddings_gemini(texts)
+    return generate_embeddings_openai(texts)
 
 
 async def store_chunks_postgres(

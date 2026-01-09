@@ -1,0 +1,72 @@
+# ============================================
+# RAILWAY ENVIRONMENT VARIABLES
+# Copy each line and paste into Railway Dashboard
+# ============================================
+
+# Variable Name: GEMINI_API_KEY
+# Value:
+AIzaSyDgmhw5VUWVQFlSuqOSrvK8j6cz1FhqapA
+
+# Variable Name: GEMINI_EMBEDDING_MODEL
+# Value:
+models/text-embedding-004
+
+# Variable Name: GEMINI_LLM_MODEL
+# Value:
+gemini-1.5-flash
+
+# Variable Name: GEMINI_TEMPERATURE
+# Value:
+0.3
+
+# Variable Name: QDRANT_URL
+# Value:
+https://a44bcc35-e2f6-44f0-8a9c-82bb1d13e8f6.us-east4-0.gcp.cloud.qdrant.io
+
+# Variable Name: QDRANT_API_KEY
+# Value:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.b4PSGhupOADwbfNZObErXy0s_hfh9uCiDImu7Y2VpjU
+
+# Variable Name: QDRANT_COLLECTION_NAME
+# Value:
+Hackhaton1
+
+# Variable Name: QDRANT_VECTOR_SIZE
+# Value:
+768
+
+# Variable Name: DATABASE_URL
+# Value:
+postgresql://neondb_owner:npg_r8MH4dVSPpgJ@ep-patient-tree-adr5pn76-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+# Variable Name: DATABASE_POOL_MIN_SIZE
+# Value:
+2
+
+# Variable Name: DATABASE_POOL_MAX_SIZE
+# Value:
+10
+
+# Variable Name: API_HOST
+# Value:
+0.0.0.0
+
+# Variable Name: API_PORT
+# Value:
+8000
+
+# Variable Name: API_RELOAD
+# Value:
+false
+
+# Variable Name: API_CORS_ORIGINS
+# Value:
+["https://hamzaacca.github.io"]
+
+# Variable Name: ADMIN_API_KEY
+# Value:
+hackathon-admin-key-2024
+
+# Variable Name: LOG_LEVEL
+# Value:
+INFO
