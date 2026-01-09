@@ -5,7 +5,7 @@
 
 (function() {
     // Configuration
-    const API_BASE_URL = 'http://localhost:8000/api/v1/chat';
+    const API_BASE_URL = 'https://book-physical-ai-robotics-production.up.railway.app/api/v1/chat';
     const STORAGE_KEY = 'rag_chat_session_id';
 
     // State
@@ -377,6 +377,125 @@
         return selection ? selection.toString().trim() : '';
     }
 
+    // Add enhanced bot message with sources and follow-ups
+    function addEnhancedBotMessage(data, scroll = true) {
+        const messagesContainer = document.getElementById('chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chat-message bot-message';
+
+        // Main answer
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = data.answer;
+        messageDiv.appendChild(contentDiv);
+
+        // Sources with chapter/section metadata
+        if (data.sources && data.sources.length > 0) {
+            const sourcesDiv = document.createElement('div');
+            sourcesDiv.className = 'message-sources';
+
+            let sourcesHTML = '<div style="font-weight: 600; margin-bottom: 6px;">📚 Sources:</div>';
+            data.sources.forEach((source, idx) => {
+                const chapter = source.chapter_title || 'General';
+                const section = source.section_title ? ` › ${source.section_title}` : '';
+                const similarity = Math.round(source.similarity * 100);
+                sourcesHTML += `
+                    <div style="margin: 4px 0; padding: 4px 0; border-left: 2px solid #667eea; padding-left: 8px;">
+                        <div style="font-weight: 500;">${chapter}${section}</div>
+                        <div style="font-size: 11px; color: #9ca3af;">Match: ${similarity}%</div>
+                    </div>
+                `;
+            });
+
+            // Add quality score if available
+            if (data.retrieval_quality) {
+                const quality = Math.round(data.retrieval_quality * 100);
+                const qualityColor = quality >= 70 ? '#10b981' : quality >= 50 ? '#f59e0b' : '#ef4444';
+                sourcesHTML += `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+                        <span style="font-size: 11px;">Quality: </span>
+                        <span style="font-weight: 600; color: ${qualityColor};">${quality}%</span>
+                    </div>
+                `;
+            }
+
+            sourcesDiv.innerHTML = sourcesHTML;
+            messageDiv.appendChild(sourcesDiv);
+        }
+
+        // Follow-up questions
+        if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+            const followUpsDiv = document.createElement('div');
+            followUpsDiv.className = 'message-sources';
+            followUpsDiv.style.marginTop = '8px';
+
+            let followUpsHTML = '<div style="font-weight: 600; margin-bottom: 6px;">💡 Follow-up questions:</div>';
+            data.follow_up_questions.forEach((question, idx) => {
+                followUpsHTML += `
+                    <div style="margin: 4px 0;">
+                        <button class="follow-up-btn" data-question="${question.replace(/"/g, '&quot;')}"
+                                style="background: none; border: 1px solid #e5e7eb; padding: 6px 10px; border-radius: 6px;
+                                       cursor: pointer; text-align: left; width: 100%; font-size: 12px; color: #667eea;
+                                       transition: all 0.2s;">
+                            ${idx + 1}. ${question}
+                        </button>
+                    </div>
+                `;
+            });
+            followUpsDiv.innerHTML = followUpsHTML;
+            messageDiv.appendChild(followUpsDiv);
+        }
+
+        // Query suggestions (for low quality matches)
+        if (data.query_suggestions && data.query_suggestions.length > 0) {
+            const suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'message-sources';
+            suggestionsDiv.style.marginTop = '8px';
+            suggestionsDiv.style.background = '#fef3c7';
+            suggestionsDiv.style.borderLeft = '3px solid #f59e0b';
+
+            let suggestionsHTML = '<div style="font-weight: 600; margin-bottom: 6px;">💭 Try asking:</div>';
+            data.query_suggestions.forEach((suggestion, idx) => {
+                suggestionsHTML += `
+                    <div style="margin: 4px 0;">
+                        <button class="follow-up-btn" data-question="${suggestion.replace(/"/g, '&quot;')}"
+                                style="background: none; border: none; padding: 4px 0; cursor: pointer;
+                                       text-align: left; width: 100%; font-size: 12px; color: #92400e;">
+                            • ${suggestion}
+                        </button>
+                    </div>
+                `;
+            });
+            suggestionsDiv.innerHTML = suggestionsHTML;
+            messageDiv.appendChild(suggestionsDiv);
+        }
+
+        messagesContainer.appendChild(messageDiv);
+
+        // Add click listeners to follow-up buttons
+        messageDiv.querySelectorAll('.follow-up-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const question = this.getAttribute('data-question');
+                document.getElementById('chat-input').value = question;
+                sendMessage(question);
+            });
+
+            // Hover effects
+            btn.addEventListener('mouseenter', function() {
+                this.style.background = '#f3f4f6';
+                this.style.transform = 'translateX(4px)';
+            });
+            btn.addEventListener('mouseleave', function() {
+                this.style.background = 'none';
+                this.style.transform = 'translateX(0)';
+            });
+        });
+
+        if (scroll) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+
     // Send message
     async function sendMessage(message) {
         if (!message.trim()) return;
@@ -432,8 +551,8 @@
             // Remove typing
             removeTyping();
 
-            // Add bot response
-            addMessage(data.answer, 'bot');
+            // Add bot response with enhanced features
+            addEnhancedBotMessage(data);
 
         } catch (error) {
             removeTyping();
