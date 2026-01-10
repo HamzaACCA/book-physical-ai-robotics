@@ -192,6 +192,39 @@ Controlling a real robot from a cloud instance is dangerous due to latency.
 - Compare digital AI (ChatGPT) vs. embodied AI (robot navigation)
 - Review humanoid robot demonstrations (Boston Dynamics, Unitree, Tesla Bot)
 
+---
+
+## Weeks 3-5: ROS 2 Fundamentals
+
+**Theme**: The Robotic Nervous System
+
+### Learning Objectives
+- Master ROS 2 architecture and core concepts
+- Build ROS 2 packages with Python
+- Understand communication patterns (topics, services, actions)
+- Configure robot launch files
+
+### Week 3: ROS 2 Architecture
+- Nodes, topics, and publishers/subscribers
+- Message types and custom messages
+- Setting up a ROS 2 workspace
+
+### Week 4: Services and Actions
+- Request-response patterns with services
+- Long-running tasks with actions
+- Action feedback and cancellation
+
+### Week 5: Building Packages
+- Python package structure with `rclpy`
+- Launch files for multi-node systems
+- Parameter management and configuration
+
+### Hands-On Projects
+- **Project 1**: Build a sensor-to-actuator pipeline
+- **Project 2**: Create a teleoperation system (keyboard → robot movement)
+- **Project 3**: Implement a simple state machine with ROS 2 actions
+
+---
 
 ## Weeks 6-7: Robot Simulation with Gazebo
 
@@ -221,6 +254,40 @@ Controlling a real robot from a cloud instance is dangerous due to latency.
 - **Project 2**: Add a depth camera and visualize point clouds
 - **Project 3**: Create a cluttered environment for navigation testing
 
+---
+
+## Weeks 8-10: NVIDIA Isaac Platform
+
+**Theme**: The AI-Robot Brain
+
+### Learning Objectives
+- Work with NVIDIA Isaac SDK and Isaac Sim
+- Implement AI-powered perception and manipulation
+- Use reinforcement learning for robot control
+- Master sim-to-real transfer techniques
+
+### Week 8: Isaac Sim Setup
+- NVIDIA Omniverse installation
+- Isaac Sim environment and robot loading
+- Photorealistic rendering and synthetic data generation
+
+### Week 9: Isaac ROS Perception
+- VSLAM (Visual SLAM) pipeline
+- Object detection with DeepStream
+- Hardware acceleration on Jetson
+
+### Week 10: Navigation and Manipulation
+- Nav2 integration for path planning
+- Grasping with humanoid hands
+- Reinforcement learning for locomotion
+
+### Hands-On Projects
+- **Project 1**: Set up Isaac Sim with a humanoid robot
+- **Project 2**: Build a VSLAM map of a simulated environment
+- **Project 3**: Implement object detection and tracking
+- **Project 4**: Train a walking controller with RL
+
+---
 
 ## Weeks 11-12: Humanoid Robot Development
 
@@ -249,6 +316,37 @@ Controlling a real robot from a cloud instance is dangerous due to latency.
 - **Project 2**: Program a humanoid hand to grasp various objects
 - **Project 3**: Design a human-robot handshake interaction
 
+---
+
+## Week 13: Conversational Robotics
+
+**Theme**: Voice-Language-Action
+
+### Learning Objectives
+- Integrate GPT models for conversational AI in robots
+- Implement speech recognition and natural language understanding
+- Build multi-modal interaction systems (speech, gesture, vision)
+- Complete the capstone project
+
+### Topics Covered
+- **Speech Recognition**: OpenAI Whisper integration
+- **LLM Planning**: Translating natural language to robot actions
+- **Multi-Modal Fusion**: Combining speech, vision, and gesture
+- **System Integration**: End-to-end autonomous pipeline
+
+### Capstone Project Presentations
+Students present their **Autonomous Humanoid** projects:
+- Voice command → LLM planning → Navigation → Object detection → Manipulation
+
+### Evaluation Criteria
+- ✅ Successful voice command recognition
+- ✅ Correct action plan generation
+- ✅ Obstacle-free navigation
+- ✅ Accurate object identification
+- ✅ Successful object manipulation
+- ✅ Robustness to variations
+
+---
 
 ## Weekly Time Commitment
 
@@ -804,6 +902,46 @@ This is the foundation of truly general-purpose robots that can operate in human
 
 This course uses **project-based assessments** to evaluate your mastery of Physical AI concepts. Each assessment builds on previous modules and culminates in a comprehensive capstone project.
 
+---
+
+## Assessment 1: ROS 2 Package Development (20%)
+
+**Due**: End of Week 5
+
+### Objective
+Demonstrate understanding of ROS 2 fundamentals by building a multi-node robotic system.
+
+### Requirements
+
+1. **Publisher-Subscriber System**:
+   - Create at least 3 nodes communicating via topics
+   - Implement custom message types
+   - Handle sensor data (simulated or real)
+
+2. **Service Integration**:
+   - Implement at least 1 service for configuration or control
+   - Demonstrate request-response pattern
+
+3. **Launch File**:
+   - Create a launch file that starts all nodes
+   - Include parameter configuration
+   - Add proper namespacing
+
+4. **Documentation**:
+   - README with installation and usage instructions
+   - Code comments explaining architecture
+   - ROS graph visualization (rqt_graph)
+
+### Evaluation Criteria
+
+| Criterion | Points |
+|-----------|--------|
+| Code Quality | 25% |
+| Functionality | 40% |
+| Documentation | 20% |
+| ROS 2 Best Practices | 15% |
+
+---
 
 ## Assessment 2: Gazebo Simulation Implementation (20%)
 
@@ -843,6 +981,47 @@ Create a realistic simulation environment for robot testing and development.
 | World Design | 20% |
 | ROS 2 Integration | 20% |
 
+---
+
+## Assessment 3: Isaac-Based Perception Pipeline (20%)
+
+**Due**: End of Week 10
+
+### Objective
+Build an AI-powered perception system using NVIDIA Isaac.
+
+### Requirements
+
+1. **VSLAM Implementation**:
+   - Set up Isaac ROS VSLAM
+   - Generate a map of a simulated environment
+   - Demonstrate localization accuracy
+
+2. **Object Detection**:
+   - Implement real-time object detection
+   - Use Isaac Sim for synthetic data generation
+   - Achieve above 80% detection accuracy on test objects
+
+3. **Navigation Integration**:
+   - Integrate VSLAM with Nav2
+   - Demonstrate autonomous navigation to goal positions
+   - Handle dynamic obstacles
+
+4. **Performance Optimization**:
+   - Profile GPU usage and latency
+   - Optimize for real-time performance (above 15 FPS)
+   - Deploy to Jetson hardware (if available)
+
+### Evaluation Criteria
+
+| Criterion | Points |
+|-----------|--------|
+| VSLAM Quality | 25% |
+| Object Detection Accuracy | 30% |
+| Navigation Performance | 25% |
+| Optimization | 20% |
+
+---
 
 ## Capstone Project: Simulated Humanoid with Conversational AI (40%)
 
@@ -933,6 +1112,20 @@ Design and deploy an autonomous humanoid robot capable of understanding voice co
 | **Integration** | Seamless, production-ready | Minor integration issues | Works with manual intervention | Components don't integrate |
 
 
+---
+
+## Grading Breakdown
+
+| Assessment | Weight |
+|------------|--------|
+| ROS 2 Package Development | 20% |
+| Gazebo Simulation Implementation | 20% |
+| Isaac Perception Pipeline | 20% |
+| **Capstone Project** | **40%** |
+| **Total** | **100%** |
+
+---
+
 ## Academic Integrity
 
 - All code must be your own or properly attributed
@@ -940,6 +1133,16 @@ Design and deploy an autonomous humanoid robot capable of understanding voice co
 - Collaboration is encouraged, but submissions must be individual
 - Generative AI (ChatGPT, Copilot) can be used for assistance, but you must understand and be able to explain all code
 
+---
+
+## Late Submission Policy
+
+- **1-2 days late**: 10% penalty
+- **3-5 days late**: 25% penalty
+- **More than 5 days late**: 50% penalty
+- **Capstone project**: No late submissions accepted (due to presentation requirement)
+
+---
 
 ## Resources
 
