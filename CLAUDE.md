@@ -215,3 +215,45 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 
 ## Recent Changes
 - 001-rag-chatbot: Added Python 3.11+ + FastAPI, OpenAI SDK (Agents/ChatKit), Qdrant Client, psycopg3 (async), pydantic
+
+## Deployment Configuration
+
+### Production URLs
+- **Backend API**: https://book-physical-ai-robotics-production.up.railway.app
+- **Frontend**: https://hamzaacca.github.io/book-physical-ai-robotics/
+- **Health Check**: GET /health
+
+### Database (PostgreSQL - Neon)
+- **Host**: ep-patient-tree-adr5pn76-pooler.c-2.us-east-1.aws.neon.tech
+- **Tables**: book_chunks, sessions, books
+- **Chunks**: 16 (600 tokens, 200 overlap)
+
+### Vector Database (Qdrant Cloud)
+- **Collection**: `book_chunks`
+- **Dimensions**: 1536 (OpenAI text-embedding-3-small)
+- **Points**: 16
+- **Distance**: Cosine
+
+### Railway Environment Variables
+```
+OPENAI_API_KEY=sk-proj-...
+QDRANT_URL=https://...qdrant.io
+QDRANT_API_KEY=...
+QDRANT_COLLECTION_NAME=book_chunks
+QDRANT_VECTOR_SIZE=1536
+DATABASE_URL=postgresql://...
+```
+
+### API Endpoints
+- `POST /api/v1/chat/message` - Send chat message
+- `POST /api/v1/chat/session` - Create new session
+- `GET /api/v1/chat/history/{session_id}` - Get chat history
+- `GET /health` - Health check
+
+### Chat Response Format
+```json
+{
+  "answer": "Response with **bold headings** and book content",
+  "session_id": "uuid"
+}
+```
