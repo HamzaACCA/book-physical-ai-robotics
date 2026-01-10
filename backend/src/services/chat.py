@@ -395,12 +395,18 @@ INSTRUCTIONS:
 - Answer based on the context provided
 - DO NOT start with "Based on the book content:" or similar phrases
 - Write in a well-structured format with proper paragraphs
-- Start each new idea or topic on a new line (use line breaks)
+- For lists (like modules, steps, components): put each item on its own line with **bold heading** followed by description in normal text
+  Example format for listing items:
+  **Item Name**
+  Description of the item goes here in normal text.
+
+  **Next Item Name**
+  Description of the next item.
 - Use proper punctuation and full stops at the end of sentences
 - Be conversational and remember previous messages
 - Reference specific information naturally within the answer
 - If the context doesn't have enough information, say so
-- Keep answers concise but well-formatted (2-4 paragraphs max)
+- Keep answers concise but well-formatted
 
 ANSWER:"""
 
@@ -552,23 +558,11 @@ ANSWER:"""
         # Step 9: Save assistant response
         await save_message(session_id, "assistant", answer, db_pool)
 
-        # Step 10: Return response with enhanced sources and new features
+        # Step 10: Return response (clean format - just answer and session)
         return {
             "answer": answer,
-            "sources": [
-                {
-                    "chunk_id": c.get("chunk_id"),
-                    "text": c["text"][:200] + "...",
-                    "similarity": c["similarity"],
-                    "chapter_title": c.get("chapter_title"),
-                    "section_title": c.get("section_title")
-                }
-                for c in retrieved_chunks
-            ],
-            "session_id": str(session_id),
-            "follow_up_questions": follow_ups if 'follow_ups' in locals() else [],
-            "query_suggestions": suggestions if suggestions else [],
-            "retrieval_quality": avg_similarity
+            "sources": [],
+            "session_id": str(session_id)
         }
 
     except Exception as e:
