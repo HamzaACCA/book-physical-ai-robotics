@@ -392,20 +392,18 @@ CONVERSATION HISTORY:
 USER QUESTION: {query}
 
 INSTRUCTIONS:
-- Answer based on the context provided
+- ONLY use information from the CONTEXT above. Do NOT make up or invent any names, titles, or details.
+- If listing modules, chapters, or items, use the EXACT names from the context - do not paraphrase or create new names.
 - DO NOT start with "Based on the book content:" or similar phrases
 - Write in a well-structured format with proper paragraphs
 - For lists (like modules, steps, components): put each item on its own line with **bold heading** followed by description in normal text
-  Example format for listing items:
+  Example format:
   **Item Name**
-  Description of the item goes here in normal text.
+  Description here.
 
   **Next Item Name**
-  Description of the next item.
-- Use proper punctuation and full stops at the end of sentences
-- Be conversational and remember previous messages
-- Reference specific information naturally within the answer
-- If the context doesn't have enough information, say so
+  Description here.
+- If the context doesn't have enough information, say so clearly
 - Keep answers concise but well-formatted
 
 ANSWER:"""
