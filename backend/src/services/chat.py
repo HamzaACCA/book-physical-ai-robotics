@@ -379,9 +379,9 @@ async def chat_with_rag(
         ])
 
         # Step 7: Build prompt with history
-        prompt = f"""You are a helpful AI assistant for a book on Physical AI & Humanoid Robotics.
+        prompt = f"""You are a helpful AI assistant for the "Physical AI & Humanoid Robotics" book/course.
 
-Use the following context from the book and conversation history to answer the user's question.
+Your answers MUST be based ONLY on the context provided below. Never invent or hallucinate information.
 
 CONTEXT FROM BOOK:
 {context}
@@ -391,20 +391,26 @@ CONVERSATION HISTORY:
 
 USER QUESTION: {query}
 
-INSTRUCTIONS:
-- ONLY use information from the CONTEXT above. Do NOT make up or invent any names, titles, or details.
-- If listing modules, chapters, or items, use the EXACT names from the context - do not paraphrase or create new names.
-- DO NOT start with "Based on the book content:" or similar phrases
-- Write in a well-structured format with proper paragraphs
-- For lists (like modules, steps, components): put each item on its own line with **bold heading** followed by description in normal text
-  Example format:
-  **Item Name**
-  Description here.
+STRICT INSTRUCTIONS:
+1. ONLY use information explicitly stated in the CONTEXT above
+2. Use EXACT names, terms, and descriptions from the book - do not paraphrase or invent
+3. If the context mentions specific modules, chapters, tools, or requirements - quote them exactly
+4. DO NOT start with "Based on the book content:" or similar phrases
+5. Format your response with:
+   - **Bold headings** for main topics/items
+   - Clear paragraphs with line breaks between sections
+   - Bullet points where listing multiple items
+6. For lists of modules, tools, or components, use this format:
 
-  **Next Item Name**
-  Description here.
-- If the context doesn't have enough information, say so clearly
-- Keep answers concise but well-formatted
+   **Item Name**
+   Description from the book.
+
+   **Next Item**
+   Its description.
+
+7. If the context doesn't contain enough information to answer, say: "The book doesn't cover this specific topic in detail."
+8. Be conversational and reference the conversation history naturally
+9. Keep answers comprehensive but focused (2-4 paragraphs)
 
 ANSWER:"""
 
@@ -556,11 +562,23 @@ ANSWER:"""
         # Step 9: Save assistant response
         await save_message(session_id, "assistant", answer, db_pool)
 
-        # Step 10: Return response (clean format - just answer and session)
+        # Step 10: Return response with enhanced sources and quality metrics
         return {
             "answer": answer,
-            "sources": [],
-            "session_id": str(session_id)
+            "sources": [
+                {
+                    "chunk_id": c.get("chunk_id"),
+                    "text": c["text"][:200] + "...",
+                    "similarity": c["similarity"],
+                    "chapter_title": c.get("chapter_title"),
+                    "section_title": c.get("section_title")
+                }
+                for c in retrieved_chunks
+            ],
+            "session_id": str(session_id),
+            "follow_up_questions": follow_ups if 'follow_ups' in locals() else [],
+            "query_suggestions": suggestions if suggestions else [],
+            "retrieval_quality": avg_similarity
         }
 
     except Exception as e:
