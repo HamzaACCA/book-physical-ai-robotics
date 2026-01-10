@@ -257,3 +257,39 @@ DATABASE_URL=postgresql://...
   "session_id": "uuid"
 }
 ```
+
+## RAG Pipeline Details
+
+### Retrieval Flow
+1. User query → OpenAI embedding (text-embedding-3-small, 1536 dims)
+2. Vector search in Qdrant (cosine similarity)
+3. Filter by similarity threshold (0.25)
+4. Fetch chunk metadata from PostgreSQL
+5. Build context from top 3 chunks
+6. Generate response with GPT-4o-mini
+
+### Configuration
+- **Embedding Model**: text-embedding-3-small (1536 dimensions)
+- **LLM Model**: gpt-4o-mini
+- **Temperature**: 0.3
+- **Max Tokens**: 800
+- **Similarity Threshold**: 0.25
+- **Top K Chunks**: 3
+
+### Chunk Settings
+- **Chunk Size**: 600 tokens
+- **Overlap**: 200 tokens
+- **Total Chunks**: 16
+
+### LLM Prompt Structure
+- System context: "Physical AI & Humanoid Robotics" book assistant
+- Strict instructions: Use ONLY book content, no hallucination
+- Format: Bold headings, bullet points, structured paragraphs
+- Context: Retrieved chunks + conversation history
+
+### Key Files
+- `backend/src/services/chat.py` - Main RAG logic
+- `backend/src/services/retrieval.py` - Vector search
+- `backend/src/db/qdrant.py` - Qdrant client
+- `backend/src/db/postgres.py` - PostgreSQL connection
+- `backend/src/cli/ingest.py` - Book ingestion
