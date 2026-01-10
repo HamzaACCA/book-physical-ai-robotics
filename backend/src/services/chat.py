@@ -574,7 +574,5 @@ ANSWER:"""
         await save_message(session_id, "assistant", error_msg, db_pool)
         return {
             "answer": error_msg,
-            "sources": [],
-            "session_id": str(session_id),
-            "error": str(e)
+            "session_id": str(session_id)
         }

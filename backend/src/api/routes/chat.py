@@ -31,12 +31,6 @@ class ChatResponse(BaseModel):
 
     answer: str
     session_id: str
-    sources: list[dict]
-
-    # NEW - Optional for backward compatibility
-    follow_up_questions: list[str] | None = None
-    query_suggestions: list[str] | None = None
-    retrieval_quality: float | None = None
 
 
 class SessionResponse(BaseModel):
