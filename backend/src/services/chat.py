@@ -562,23 +562,10 @@ ANSWER:"""
         # Step 9: Save assistant response
         await save_message(session_id, "assistant", answer, db_pool)
 
-        # Step 10: Return response with enhanced sources and quality metrics
+        # Step 10: Return response (clean format - just answer and session)
         return {
             "answer": answer,
-            "sources": [
-                {
-                    "chunk_id": c.get("chunk_id"),
-                    "text": c["text"][:200] + "...",
-                    "similarity": c["similarity"],
-                    "chapter_title": c.get("chapter_title"),
-                    "section_title": c.get("section_title")
-                }
-                for c in retrieved_chunks
-            ],
-            "session_id": str(session_id),
-            "follow_up_questions": follow_ups if 'follow_ups' in locals() else [],
-            "query_suggestions": suggestions if suggestions else [],
-            "retrieval_quality": avg_similarity
+            "session_id": str(session_id)
         }
 
     except Exception as e:
