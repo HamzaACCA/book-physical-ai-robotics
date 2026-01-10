@@ -350,13 +350,20 @@
         }
     }
 
-    // Parse markdown to HTML (with fallback if marked not loaded)
+    // Parse markdown to HTML
     function parseMarkdown(text) {
-        if (typeof marked !== 'undefined') {
+        if (typeof marked !== 'undefined' && marked.parse) {
             return marked.parse(text);
         }
-        // Fallback: basic bold parsing
-        return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // Fallback: basic markdown parsing
+        let html = text;
+        // Bold: **text**
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // Line breaks: double newline to paragraph
+        html = html.split('\n\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('');
+        // Single newlines to <br>
+        html = html.replace(/\n/g, '<br>');
+        return html;
     }
 
     // Add message to chat
