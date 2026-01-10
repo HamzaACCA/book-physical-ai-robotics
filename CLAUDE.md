@@ -293,3 +293,51 @@ DATABASE_URL=postgresql://...
 - `backend/src/db/qdrant.py` - Qdrant client
 - `backend/src/db/postgres.py` - PostgreSQL connection
 - `backend/src/cli/ingest.py` - Book ingestion
+
+## Frontend Chat Widget
+
+### File Location
+- `static/chat-widget.js` - Self-contained widget (HTML + CSS + JS)
+- Loaded via `docusaurus.config.js` scripts array
+
+### Widget Structure
+```
+┌─────────────────────────────┐
+│  Chat Header                │  "Ask about this book" + Close button
+├─────────────────────────────┤
+│                             │
+│  Messages Area              │  Bot messages (markdown rendered)
+│  - Welcome message          │  User messages (plain text)
+│  - Conversation history     │  Typing indicator (animated dots)
+│                             │
+├─────────────────────────────┤
+│  Input Area                 │  Text input + Send button
+└─────────────────────────────┘
+     [Chat Button]               Floating button (bottom-right)
+```
+
+### Features
+- **Session Persistence**: localStorage saves session_id
+- **Chat History**: Loads previous messages on open
+- **Markdown Rendering**: Uses marked.js (CDN) with fallback parser
+- **Typing Indicator**: Animated dots while waiting for response
+- **Responsive**: Mobile-friendly layout (480px breakpoint)
+
+### Styling
+- **Colors**: Purple gradient (#667eea → #764ba2)
+- **Bot Messages**: White background, light shadow
+- **User Messages**: Purple gradient background, white text
+- **Bold Text**: `<strong>` tags, darker color (#111827)
+
+### Markdown Support
+- **Bold**: `**text**` → `<strong>text</strong>`
+- **Paragraphs**: Double newline → `<p>` tags
+- **Line breaks**: Single newline → `<br>`
+- **Lists**: Rendered via marked.js
+
+### API Integration
+```javascript
+API_BASE_URL = 'https://book-physical-ai-robotics-production.up.railway.app/api/v1/chat'
+POST /message  → { message, session_id? }
+GET /history/{session_id} → conversation history
+```
