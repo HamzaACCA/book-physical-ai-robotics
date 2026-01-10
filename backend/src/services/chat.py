@@ -301,8 +301,9 @@ async def chat_with_rag(
 
             # Step 4: Retrieve chunk details from PostgreSQL with similarity threshold
             # OpenAI text-embedding-3-small has lower similarity scores than Gemini
-            # Adjusted from 0.6 (Gemini) to 0.35 for OpenAI embeddings (liberal threshold for this book)
-            SIMILARITY_THRESHOLD = 0.35
+            # Using 0.25 threshold for technical queries (ROS 2, hardware, etc.)
+            # Higher scores (0.5+) for general topics, lower (0.27-0.33) for specific technical terms
+            SIMILARITY_THRESHOLD = 0.25
             retrieved_chunks = []
             filtered_count = 0
 
