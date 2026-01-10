@@ -89,3 +89,4 @@ render.yaml
 *.tmp
 *.temp
 *.bak
+RAILWAY_ENV_VARS.txt
