@@ -8,6 +8,11 @@
     const API_BASE_URL = 'https://book-physical-ai-robotics-production.up.railway.app/api/v1/chat';
     const STORAGE_KEY = 'rag_chat_session_id';
 
+    // Load marked.js for markdown rendering
+    const markedScript = document.createElement('script');
+    markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    document.head.appendChild(markedScript);
+
     // State
     let sessionId = localStorage.getItem(STORAGE_KEY);
     let isOpen = false;
@@ -196,6 +201,20 @@
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
 
+            /* Markdown styles */
+            .bot-message .message-content strong {
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .bot-message .message-content p {
+                margin: 0 0 12px 0;
+            }
+
+            .bot-message .message-content p:last-child {
+                margin-bottom: 0;
+            }
+
             .system-message .message-content {
                 background: #fef3c7;
                 color: #92400e;
@@ -331,6 +350,15 @@
         }
     }
 
+    // Parse markdown to HTML (with fallback if marked not loaded)
+    function parseMarkdown(text) {
+        if (typeof marked !== 'undefined') {
+            return marked.parse(text);
+        }
+        // Fallback: basic bold parsing
+        return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    }
+
     // Add message to chat
     function addMessage(text, type, scroll = true) {
         const messagesContainer = document.getElementById('chat-messages');
@@ -339,7 +367,12 @@
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = text;
+        // Use markdown parsing for bot messages, plain text for user messages
+        if (type === 'bot') {
+            contentDiv.innerHTML = parseMarkdown(text);
+        } else {
+            contentDiv.textContent = text;
+        }
 
         messageDiv.appendChild(contentDiv);
         messagesContainer.appendChild(messageDiv);
@@ -383,10 +416,10 @@
         const messageDiv = document.createElement('div');
         messageDiv.className = 'chat-message bot-message';
 
-        // Main answer
+        // Main answer (with markdown parsing)
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = data.answer;
+        contentDiv.innerHTML = parseMarkdown(data.answer);
         messageDiv.appendChild(contentDiv);
 
         // Sources with chapter/section metadata
